@@ -12,8 +12,8 @@ void DiffuseMaterial::CreateMaterial(int unit)
     glUseProgram(_program->GetProgramId());
     GLuint location = glGetUniformLocation(_program->GetProgramId(), "diffuse_reflectance");
     glUniform3fv(location, 1, (float*)&color);
-	location = glGetUniformLocation(_program->GetProgramId(), "ourTexture");
-	glUniform1i(location, unit);
+	// location = glGetUniformLocation(_program->GetProgramId(), "ourTexture");
+	// glUniform1i(location, unit);
 }
 
 void DiffuseMaterial::UpdateDiffuseReflectance(glm::vec3 color)
@@ -39,24 +39,22 @@ void DiffuseMaterial::UpdateLight(std::vector<Light> &lights)
 		location = glGetUniformLocation(pid, buf);
 		glUniform3fv(location, 1, (float*)&(lights[i].diffuse_illuminance));
 
-		glm::mat4 world_transform = lights[i].transform.GetWorldTransform();
-		glm::vec4 local_pos = glm::vec4(0.0, 0.0, 0.0, 1.0);
-		glm::vec4 world_pos = world_transform * local_pos;
-		snprintf(buf, BUF_SIZE, "lights[%d].pos", i);
+		snprintf(buf, BUF_SIZE, "lights[%d].light_direction", i);
 		location = glGetUniformLocation(pid, buf);
-		glUniform3fv(location, 1, (float*)&(world_pos));
-
-		glm::vec4 local_dir = glm::vec4(0.0, 0.0, 1.0, 0.0);
-		glm::vec4 world_dir = world_transform * local_dir;
-		snprintf(buf, BUF_SIZE, "lights[%d].dir", i);
-		location = glGetUniformLocation(pid, buf);
-		glUniform3fv(location, 1, (float*)&(world_dir));
+		glUniform3fv(location, 1, (float*)&(lights[i].light_direction));
 
 		snprintf(buf, BUF_SIZE, "lights[%d].type", i);
 		location = glGetUniformLocation(pid, buf);
 		glUniform1iv(location, 1, (int*)&(lights[i].type));
 
-				snprintf(buf, BUF_SIZE, "lights[%d].enabled", i);
+		glm::mat4 world_transform = lights[i].transform.GetWorldTransform();
+		glm::vec4 local_pos = glm::vec4(0.0, 0.0, 0.0, 1.0);
+		glm::vec4 world_pos = world_transform * local_pos;
+		snprintf(buf, BUF_SIZE, "lights[%d].pos", numLights);
+		location = glGetUniformLocation(pid, buf);
+		glUniform3fv(location, 1, (float*)&(world_pos));
+
+		snprintf(buf, BUF_SIZE, "lights[%d].enabled", i);
 		location = glGetUniformLocation(pid, buf);
 		glUniform1iv(location, 1, (int*)&(lights[i].enabled));
 

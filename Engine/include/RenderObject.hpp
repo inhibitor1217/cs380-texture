@@ -12,7 +12,7 @@ namespace Engine
     class RenderObject
     {
     private:
-        Transform _transform;
+        Transform *_transform;
 
     protected:
         RenderObject();
@@ -27,7 +27,7 @@ namespace Engine
         void SetMesh(Mesh* mesh) { _mesh = mesh; }
         void SetMaterial(Material* material) { _material = material; }
         
-        Transform* GetTransform() { return &_transform; }
-        void SetTransform(Transform t) { _transform = t; }
+        Transform *GetTransform() { return _transform; }
+        void SetTransform(Transform *t) { _transform = t; }
     };
 }

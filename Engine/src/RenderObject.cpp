@@ -7,16 +7,18 @@ namespace Engine
 {
     RenderObject::RenderObject()
     {
-        _transform.SetPosition(glm::vec3(0.0f));
-        _transform.SetOrientation(glm::mat4(1.0f));
-        _transform.SetScale(glm::vec3(1.0f));
+		_transform = new Transform();
+        _transform->SetPosition(glm::vec3(0.0f));
+        _transform->SetOrientation(glm::mat4(1.0f));
+        _transform->SetScale(glm::vec3(1.0f));
     }
 
     RenderObject::RenderObject(Mesh* mesh, Material* material) : _mesh(mesh), _material(material)
     {
-        _transform.SetPosition(glm::vec3(0.0f));
-        _transform.SetOrientation(glm::mat4(1.0f));
-        _transform.SetScale(glm::vec3(1.0f));
+		_transform = new Transform();
+        _transform->SetPosition(glm::vec3(0.0f));
+        _transform->SetOrientation(glm::mat4(1.0f));
+        _transform->SetScale(glm::vec3(1.0f));
     }
 
     void RenderObject::Render(Camera* cam)
@@ -25,7 +27,7 @@ namespace Engine
         glUseProgram(programId);
 
         // Send camera uniform data to glsl program
-        glm::mat4 worldTransform = _transform.GetWorldTransform();
+        glm::mat4 worldTransform = _transform->GetWorldTransform();
 
         glUniformMatrix4fv(glGetUniformLocation(programId, "worldTransform"), 1, GL_FALSE, (float*)&worldTransform);
 

@@ -83,7 +83,7 @@ void Geometry::Quad(Engine::Mesh* mesh, int a_a, int a_b, int a_c, int a_d)
 }
 
 
-void Geometry::GenerateCube(Engine::Mesh* mesh)
+void Geometry::GenerateCube(Engine::Mesh* mesh, bool invert)
 {
     /*   5 -- 6
      *  /|   /|
@@ -97,46 +97,14 @@ void Geometry::GenerateCube(Engine::Mesh* mesh)
 	mesh->AddAttribute(4); // for tangent
 
     // Add four quad for generating a cube
-    Quad(mesh, 1, 0, 3, 2);
-    Quad(mesh, 2, 3, 7, 6);
-    Quad(mesh, 3, 0, 4, 7);
-    Quad(mesh, 6, 5, 1, 2);
-    Quad(mesh, 4, 5, 6, 7);
-    Quad(mesh, 5, 4, 0, 1);
+    Quad(mesh, 1, invert ? 2 : 0, 3, invert ? 0 : 2);
+    Quad(mesh, 2, invert ? 6 : 3, 7, invert ? 3 : 6);
+    Quad(mesh, 3, invert ? 7 : 0, 4, invert ? 0 : 7);
+    Quad(mesh, 6, invert ? 2 : 5, 1, invert ? 5 : 2);
+    Quad(mesh, 4, invert ? 7 : 5, 6, invert ? 5 : 7);
+    Quad(mesh, 5, invert ? 1 : 4, 0, invert ? 4 : 1);
 
     mesh->SetNumElements(36);
-    mesh->CreateMesh();
-    return;
-}
-
-void Geometry::GenerateTriangleMesh(Engine::Mesh* mesh)
-{
-    mesh->AddAttribute(4);
-
-    glm::vec3 position_data[] = {
-        glm::vec3(-1.0f, -1.0f, 0.0f),
-        glm::vec3(1.0f, -1.0f, 0.0f),
-        glm::vec3(0.0f,1.0f, 0.0f)
-    };
-
-    for (int i = 0; i < 3; i++)
-    {
-        mesh->AddVertexData(position_data[i]);
-        mesh->AddVertexData(1.0f);
-
-    }
-    mesh->SetNumElements(3);
-    mesh->CreateMesh();
-    return;
-}
-
-void Geometry::GenerateLine(Engine::Mesh* mesh)
-{
-    mesh->SetDrawMode(GL_LINES);
-    mesh->AddAttribute(4);
-    mesh->AddVertexData(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
-    mesh->AddVertexData(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
-    mesh->SetNumElements(2);
     mesh->CreateMesh();
     return;
 }

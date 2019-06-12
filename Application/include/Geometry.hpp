@@ -17,7 +17,7 @@ protected:
 public:
 	Geometry();
 	~Geometry();
-	void GenerateCube(Engine::Mesh* mesh);
+	void GenerateCube(Engine::Mesh* mesh, bool invert = false);
 	void Quad(Engine::Mesh* mesh, int a_a, int a_b, int a_c, int a_d);
 	glm::vec3 ComputeNormal(glm::vec4 a_a, glm::vec4 a_b, glm::vec4 a_c);
 	void GenerateTriangleMesh(Engine::Mesh* mesh);

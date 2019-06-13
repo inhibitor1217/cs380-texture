@@ -4,7 +4,7 @@ in vec4 fragmentPosition;
 in vec4 fragmentNormal;
 in vec2 uv;
 
-// uniform sampler2D ourTexture;
+uniform sampler2D ourTexture;
 out vec4 output_color;
 
 struct Light
@@ -22,7 +22,7 @@ uniform Light lights[3];
 
 uniform vec3 diffuse_reflectance;
 
-const vec3 ambient_illuminance = vec3(0.1, 0.1, 0.1);
+const vec3 ambient_illuminance = vec3(0.2, 0.2, 0.2);
 
 void main()
 {
@@ -82,7 +82,7 @@ void main()
 	output_color = vec4(intensity, 1);
 
 	// Get color from texture
-	// output_color = output_color * texture(ourTexture, uv);
+	output_color = output_color * texture(ourTexture, uv);
 
 	
 }

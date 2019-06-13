@@ -12,8 +12,8 @@ void DiffuseMaterial::CreateMaterial(int unit)
     glUseProgram(_program->GetProgramId());
     GLuint location = glGetUniformLocation(_program->GetProgramId(), "diffuse_reflectance");
     glUniform3fv(location, 1, (float*)&color);
-	// location = glGetUniformLocation(_program->GetProgramId(), "ourTexture");
-	// glUniform1i(location, unit);
+	location = glGetUniformLocation(_program->GetProgramId(), "ourTexture");
+	glUniform1i(location, unit);
 }
 
 void DiffuseMaterial::UpdateDiffuseReflectance(glm::vec3 color)

@@ -5,10 +5,8 @@
 
 class NormalMaterial : public Engine::Material
 {
-private:
-    //TODO
 public:
-	//TODO
-    void CreateMaterial();
-	//TODO
+	void CreateMaterial(int unit, int normal);
+	void UpdateDiffuseReflectance(glm::vec3 color);
+	void UpdateLight(std::vector<Light> &lights);
 };

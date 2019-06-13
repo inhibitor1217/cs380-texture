@@ -47,10 +47,10 @@ void DiffuseMaterial::UpdateLight(std::vector<Light> &lights)
 		location = glGetUniformLocation(pid, buf);
 		glUniform1iv(location, 1, (int*)&(lights[i].type));
 
-		glm::mat4 world_transform = lights[i].transform.GetWorldTransform();
+		glm::mat4 world_transform = lights[i].transform->GetWorldTransform();
 		glm::vec4 local_pos = glm::vec4(0.0, 0.0, 0.0, 1.0);
 		glm::vec4 world_pos = world_transform * local_pos;
-		snprintf(buf, BUF_SIZE, "lights[%d].pos", numLights);
+		snprintf(buf, BUF_SIZE, "lights[%d].pos", i);
 		location = glGetUniformLocation(pid, buf);
 		glUniform3fv(location, 1, (float*)&(world_pos));
 

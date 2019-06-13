@@ -26,7 +26,8 @@
 #include <RenderObject.hpp>
 
 #include <Geometry.hpp>
-#include <DiffuseMaterial.hpp>
+#include <NormalMaterial.hpp>
+#include <CubeMaterial.hpp>
 
 GLFWwindow* g_window;
 float g_window_width = 1440.f;
@@ -64,6 +65,9 @@ static void KeyboardCallback(GLFWwindow* a_window, int a_key, int a_scancode, in
 			break;
 		case GLFW_KEY_DOWN:
 			mode_cam_back = true;
+			break;
+		case GLFW_KEY_P:
+			lights[1].enabled = !lights[1].enabled;
 			break;
 		}
 	}
@@ -132,10 +136,19 @@ int main(int argc, char** argv)
 	lights.push_back({
 		LightType::DirectionalLight,
 		1,
-		Engine::Transform(),
+		new Engine::Transform(),
 		glm::vec3(2, 3, 1),
 		glm::vec3(1, 1, 1)
 	});
+	lights.push_back({
+		LightType::PointLight,
+		false,
+		new Engine::Transform(),
+		glm::vec3(1, 1, 1),
+		glm::vec3(10, 10, 10)
+	});
+
+	lights[1].transform->SetPosition(glm::vec3(0, 0, 2));
 
 	Engine::Mesh *roomMesh = new Engine::Mesh();
 	roomMesh->AddAttribute(4);
@@ -184,37 +197,39 @@ int main(int argc, char** argv)
 			roomMesh->AddVertexData(glm::vec4(1, 0, 0, 0));
 
 			block_type = (x == -10 || x == 9) || (y == -5 || y == 4) ? 0x15 : 0x10;
+			if ((x == -1 || x == 0) && (y == -1 || y == 0))
+				block_type = 0xD3;
 			block_x = block_type & 0xF;
 			block_y = block_type >> 4;
 
 			roomMesh->AddVertexData(glm::vec4(x, y, 3, 1));
 			roomMesh->AddVertexData(glm::vec4(0, 0, -1, 0));
-			roomMesh->AddVertexData(glm::vec2(block_x * atlas_size, (block_y + 1) * atlas_size));
+			roomMesh->AddVertexData(glm::vec2(block_x * atlas_size + offset, (block_y + 1) * atlas_size - offset));
 			roomMesh->AddVertexData(glm::vec4(1, 0, 0, 0));
 
 			roomMesh->AddVertexData(glm::vec4(x + 1, y + 1, 3, 1));
 			roomMesh->AddVertexData(glm::vec4(0, 0, -1, 0));
-			roomMesh->AddVertexData(glm::vec2((block_x + 1) * atlas_size, block_y * atlas_size));
+			roomMesh->AddVertexData(glm::vec2((block_x + 1) * atlas_size - offset, block_y * atlas_size + offset));
 			roomMesh->AddVertexData(glm::vec4(1, 0, 0, 0));
 
 			roomMesh->AddVertexData(glm::vec4(x + 1, y, 3, 1));
 			roomMesh->AddVertexData(glm::vec4(0, 0, -1, 0));
-			roomMesh->AddVertexData(glm::vec2((block_x + 1) * atlas_size, (block_y + 1) * atlas_size));
+			roomMesh->AddVertexData(glm::vec2((block_x + 1) * atlas_size - offset, (block_y + 1) * atlas_size - offset));
 			roomMesh->AddVertexData(glm::vec4(1, 0, 0, 0));
 
 			roomMesh->AddVertexData(glm::vec4(x, y, 3, 1));
 			roomMesh->AddVertexData(glm::vec4(0, 0, -1, 0));
-			roomMesh->AddVertexData(glm::vec2(block_x * atlas_size, (block_y + 1) * atlas_size));
+			roomMesh->AddVertexData(glm::vec2(block_x * atlas_size + offset, (block_y + 1) * atlas_size - offset));
 			roomMesh->AddVertexData(glm::vec4(1, 0, 0, 0));
 
 			roomMesh->AddVertexData(glm::vec4(x, y + 1, 3, 1));
 			roomMesh->AddVertexData(glm::vec4(0, 0, -1, 0));
-			roomMesh->AddVertexData(glm::vec2(block_x * atlas_size, block_y * atlas_size));
+			roomMesh->AddVertexData(glm::vec2(block_x * atlas_size + offset, block_y * atlas_size + offset));
 			roomMesh->AddVertexData(glm::vec4(1, 0, 0, 0));
 
 			roomMesh->AddVertexData(glm::vec4(x + 1, y + 1, 3, 1));
 			roomMesh->AddVertexData(glm::vec4(0, 0, -1, 0));
-			roomMesh->AddVertexData(glm::vec2((block_x + 1) * atlas_size, block_y * atlas_size));
+			roomMesh->AddVertexData(glm::vec2((block_x + 1) * atlas_size - offset, block_y * atlas_size + offset));
 			roomMesh->AddVertexData(glm::vec4(1, 0, 0, 0));
 
 		}
@@ -224,40 +239,41 @@ int main(int argc, char** argv)
 	{
 		for (int z = -1; z < 3; z++)
 		{
-			int block_type = x == -10 || x == 9 ? 0x14 : 0x04;
+			int block_type = x == -10 || x == 9 ? 0x14 : (x > -8 && x < 7 && (z == 0 || z == 1)) ? 0x31 : 0x04;
 			int block_x = block_type & 0xF;
 			int block_y = block_type >> 4;
+			float offset = 0.025f / 16.0f;
 			float atlas_size = 1.0f / 16.0f;
 
 			roomMesh->AddVertexData(glm::vec4(x, -5, z, 1));
 			roomMesh->AddVertexData(glm::vec4(0, 1, 0, 0));
-			roomMesh->AddVertexData(glm::vec2(block_x * atlas_size, (block_y + 1) * atlas_size));
-			roomMesh->AddVertexData(glm::vec4(0, 0, 1, 0));
+			roomMesh->AddVertexData(glm::vec2(block_x * atlas_size + offset, (block_y + 1) * atlas_size) - offset);
+			roomMesh->AddVertexData(glm::vec4(-1, 0, 0, 0));
 
 			roomMesh->AddVertexData(glm::vec4(x + 1, -5, z + 1, 1));
 			roomMesh->AddVertexData(glm::vec4(0, 1, 0, 0));
-			roomMesh->AddVertexData(glm::vec2((block_x + 1) * atlas_size, block_y * atlas_size));
-			roomMesh->AddVertexData(glm::vec4(0, 0, 1, 0));
+			roomMesh->AddVertexData(glm::vec2((block_x + 1) * atlas_size - offset, block_y * atlas_size + offset));
+			roomMesh->AddVertexData(glm::vec4(-1, 0, 0, 0));
 
 			roomMesh->AddVertexData(glm::vec4(x + 1, -5, z, 1));
 			roomMesh->AddVertexData(glm::vec4(0, 1, 0, 0));
-			roomMesh->AddVertexData(glm::vec2((block_x + 1) * atlas_size, (block_y + 1) * atlas_size));
-			roomMesh->AddVertexData(glm::vec4(0, 0, 1, 0));
+			roomMesh->AddVertexData(glm::vec2((block_x + 1) * atlas_size - offset, (block_y + 1) * atlas_size - offset));
+			roomMesh->AddVertexData(glm::vec4(-1, 0, 0, 0));
 
 			roomMesh->AddVertexData(glm::vec4(x, -5, z, 1));
 			roomMesh->AddVertexData(glm::vec4(0, 1, 0, 0));
-			roomMesh->AddVertexData(glm::vec2(block_x * atlas_size, (block_y + 1) * atlas_size));
-			roomMesh->AddVertexData(glm::vec4(0, 0, 1, 0));
+			roomMesh->AddVertexData(glm::vec2(block_x * atlas_size + offset, (block_y + 1) * atlas_size - offset));
+			roomMesh->AddVertexData(glm::vec4(-1, 0, 0, 0));
 
 			roomMesh->AddVertexData(glm::vec4(x, -5, z + 1, 1));
 			roomMesh->AddVertexData(glm::vec4(0, 1, 0, 0));
-			roomMesh->AddVertexData(glm::vec2(block_x * atlas_size, block_y * atlas_size));
-			roomMesh->AddVertexData(glm::vec4(0, 0, 1, 0));
+			roomMesh->AddVertexData(glm::vec2(block_x * atlas_size + offset, block_y * atlas_size + offset));
+			roomMesh->AddVertexData(glm::vec4(-1, 0, 0, 0));
 
 			roomMesh->AddVertexData(glm::vec4(x + 1, -5, z+1, 1));
 			roomMesh->AddVertexData(glm::vec4(0, 1, 0, 0));
-			roomMesh->AddVertexData(glm::vec2((block_x + 1) * atlas_size, block_y * atlas_size));
-			roomMesh->AddVertexData(glm::vec4(0, 0, 1, 0));
+			roomMesh->AddVertexData(glm::vec2((block_x + 1) * atlas_size - offset, block_y * atlas_size + offset));
+			roomMesh->AddVertexData(glm::vec4(-1, 0, 0, 0));
 
 			block_type = x == -10 || x == 9 ? 0x14 : (x > -7 && x < 5 && z == 1) ? 0x54 : 0x04;
 			block_x = block_type & 0xF;
@@ -265,33 +281,33 @@ int main(int argc, char** argv)
 
 			roomMesh->AddVertexData(glm::vec4(x, 5, z, 1));
 			roomMesh->AddVertexData(glm::vec4(0, -1, 0, 0));
-			roomMesh->AddVertexData(glm::vec2(block_x * atlas_size, (block_y + 1) * atlas_size));
-			roomMesh->AddVertexData(glm::vec4(0, 0, 1, 0));
+			roomMesh->AddVertexData(glm::vec2(block_x * atlas_size + offset, (block_y + 1) * atlas_size - offset));
+			roomMesh->AddVertexData(glm::vec4(1, 0, 0, 0));
 
 			roomMesh->AddVertexData(glm::vec4(x + 1, 5, z, 1));
 			roomMesh->AddVertexData(glm::vec4(0, -1, 0, 0));
-			roomMesh->AddVertexData(glm::vec2((block_x + 1) * atlas_size, (block_y + 1) * atlas_size));
-			roomMesh->AddVertexData(glm::vec4(0, 0, 1, 0));
+			roomMesh->AddVertexData(glm::vec2((block_x + 1) * atlas_size - offset, (block_y + 1) * atlas_size - offset));
+			roomMesh->AddVertexData(glm::vec4(1, 0, 0, 0));
 
 			roomMesh->AddVertexData(glm::vec4(x + 1, 5, z + 1, 1));
 			roomMesh->AddVertexData(glm::vec4(0, -1, 0, 0));
-			roomMesh->AddVertexData(glm::vec2((block_x + 1) * atlas_size, block_y * atlas_size));
-			roomMesh->AddVertexData(glm::vec4(0, 0, 1, 0));
+			roomMesh->AddVertexData(glm::vec2((block_x + 1) * atlas_size - offset, block_y * atlas_size + offset));
+			roomMesh->AddVertexData(glm::vec4(1, 0, 0, 0));
 
 			roomMesh->AddVertexData(glm::vec4(x, 5, z, 1));
 			roomMesh->AddVertexData(glm::vec4(0, -1, 0, 0));
-			roomMesh->AddVertexData(glm::vec2(block_x * atlas_size, (block_y + 1) * atlas_size));
-			roomMesh->AddVertexData(glm::vec4(0, 0, 1, 0));
+			roomMesh->AddVertexData(glm::vec2(block_x * atlas_size + offset, (block_y + 1) * atlas_size - offset));
+			roomMesh->AddVertexData(glm::vec4(1, 0, 0, 0));
 
 			roomMesh->AddVertexData(glm::vec4(x + 1, 5, z + 1, 1));
 			roomMesh->AddVertexData(glm::vec4(0, -1, 0, 0));
-			roomMesh->AddVertexData(glm::vec2((block_x + 1) * atlas_size, block_y * atlas_size));
-			roomMesh->AddVertexData(glm::vec4(0, 0, 1, 0));
+			roomMesh->AddVertexData(glm::vec2((block_x + 1) * atlas_size - offset, block_y * atlas_size + offset));
+			roomMesh->AddVertexData(glm::vec4(1, 0, 0, 0));
 
 			roomMesh->AddVertexData(glm::vec4(x, 5, z + 1, 1));
 			roomMesh->AddVertexData(glm::vec4(0, -1, 0, 0));
-			roomMesh->AddVertexData(glm::vec2(block_x * atlas_size, block_y * atlas_size));
-			roomMesh->AddVertexData(glm::vec4(0, 0, 1, 0));
+			roomMesh->AddVertexData(glm::vec2(block_x * atlas_size + offset, block_y * atlas_size + offset));
+			roomMesh->AddVertexData(glm::vec4(1, 0, 0, 0));
 
 		}
 	}
@@ -300,72 +316,73 @@ int main(int argc, char** argv)
 	{
 		for (int z = -1; z < 3; z++)
 		{
-			int block_type = y == -5 || y == 4 ? 0x14 : 0x04;
+			int block_type = y == -5 || y == 4 ? 0x14 : (y > -4 && y < 3 && (z == 0 || z == 1)) ? 0x31 : 0x04;
 			int block_x = block_type & 0xF;
 			int block_y = block_type >> 4;
+			float offset = 0.025f / 16.0f;
 			float atlas_size = 1.0f / 16.0f;
 
 			roomMesh->AddVertexData(glm::vec4(-10, y, z, 1));
 			roomMesh->AddVertexData(glm::vec4(1, 0, 0, 0));
-			roomMesh->AddVertexData(glm::vec2(block_x * atlas_size, (block_y + 1) * atlas_size));
+			roomMesh->AddVertexData(glm::vec2(block_x * atlas_size + offset, (block_y + 1) * atlas_size - offset));
 			roomMesh->AddVertexData(glm::vec4(0, 1, 0, 0));
 
 			roomMesh->AddVertexData(glm::vec4(-10, y + 1, z, 1));
 			roomMesh->AddVertexData(glm::vec4(1, 0, 0, 0));
-			roomMesh->AddVertexData(glm::vec2((block_x + 1) * atlas_size, (block_y + 1) * atlas_size));
+			roomMesh->AddVertexData(glm::vec2((block_x + 1) * atlas_size - offset, (block_y + 1) * atlas_size - offset));
 			roomMesh->AddVertexData(glm::vec4(0, 1, 0, 0));
 
 			roomMesh->AddVertexData(glm::vec4(-10, y+1, z + 1, 1));
 			roomMesh->AddVertexData(glm::vec4(1, 0, 0, 0));
-			roomMesh->AddVertexData(glm::vec2((block_x + 1) * atlas_size, block_y * atlas_size));
+			roomMesh->AddVertexData(glm::vec2((block_x + 1) * atlas_size - offset, block_y * atlas_size + offset));
 			roomMesh->AddVertexData(glm::vec4(0, 1, 0, 0));
 
 			roomMesh->AddVertexData(glm::vec4(-10, y, z, 1));
 			roomMesh->AddVertexData(glm::vec4(1, 0, 0, 0));
-			roomMesh->AddVertexData(glm::vec2(block_x * atlas_size, (block_y + 1) * atlas_size));
+			roomMesh->AddVertexData(glm::vec2(block_x * atlas_size + offset, (block_y + 1) * atlas_size - offset));
 			roomMesh->AddVertexData(glm::vec4(0, 1, 0, 0));
 
 			roomMesh->AddVertexData(glm::vec4(-10, y + 1, z + 1, 1));
 			roomMesh->AddVertexData(glm::vec4(1, 0, 0, 0));
-			roomMesh->AddVertexData(glm::vec2((block_x + 1) * atlas_size, block_y * atlas_size));
+			roomMesh->AddVertexData(glm::vec2((block_x + 1) * atlas_size - offset, block_y * atlas_size + offset));
 			roomMesh->AddVertexData(glm::vec4(0, 1, 0, 0));
 
 			roomMesh->AddVertexData(glm::vec4(-10, y, z + 1, 1));
 			roomMesh->AddVertexData(glm::vec4(1, 0, 0, 0));
-			roomMesh->AddVertexData(glm::vec2(block_x * atlas_size, block_y * atlas_size));
+			roomMesh->AddVertexData(glm::vec2(block_x * atlas_size + offset, block_y * atlas_size + offset));
 			roomMesh->AddVertexData(glm::vec4(0, 1, 0, 0));
 
 
 
 			roomMesh->AddVertexData(glm::vec4(10, y, z, 1));
 			roomMesh->AddVertexData(glm::vec4(-1, 0, 0, 0));
-			roomMesh->AddVertexData(glm::vec2(block_x * atlas_size, (block_y + 1) * atlas_size));
-			roomMesh->AddVertexData(glm::vec4(0, 1, 0, 0));
+			roomMesh->AddVertexData(glm::vec2(block_x * atlas_size + offset, (block_y + 1) * atlas_size - offset));
+			roomMesh->AddVertexData(glm::vec4(0, -1, 0, 0));
 
 			roomMesh->AddVertexData(glm::vec4(10, y + 1, z + 1, 1));
 			roomMesh->AddVertexData(glm::vec4(-1, 0, 0, 0));
-			roomMesh->AddVertexData(glm::vec2((block_x + 1) * atlas_size, block_y * atlas_size));
-			roomMesh->AddVertexData(glm::vec4(0, 1, 0, 0));
+			roomMesh->AddVertexData(glm::vec2((block_x + 1) * atlas_size - offset, block_y * atlas_size + offset));
+			roomMesh->AddVertexData(glm::vec4(0, -1, 0, 0));
 
 			roomMesh->AddVertexData(glm::vec4(10, y + 1, z, 1));
 			roomMesh->AddVertexData(glm::vec4(-1, 0, 0, 0));
-			roomMesh->AddVertexData(glm::vec2((block_x + 1) * atlas_size, (block_y + 1) * atlas_size));
-			roomMesh->AddVertexData(glm::vec4(0, 1, 0, 0));
+			roomMesh->AddVertexData(glm::vec2((block_x + 1) * atlas_size - offset, (block_y + 1) * atlas_size - offset));
+			roomMesh->AddVertexData(glm::vec4(0, -1, 0, 0));
 
 			roomMesh->AddVertexData(glm::vec4(10, y, z, 1));
 			roomMesh->AddVertexData(glm::vec4(-1, 0, 0, 0));
-			roomMesh->AddVertexData(glm::vec2(block_x * atlas_size, (block_y + 1) * atlas_size));
-			roomMesh->AddVertexData(glm::vec4(0, 1, 0, 0));
+			roomMesh->AddVertexData(glm::vec2(block_x * atlas_size + offset, (block_y + 1) * atlas_size - offset));
+			roomMesh->AddVertexData(glm::vec4(0, -1, 0, 0));
 
 			roomMesh->AddVertexData(glm::vec4(10, y, z + 1, 1));
 			roomMesh->AddVertexData(glm::vec4(-1, 0, 0, 0));
-			roomMesh->AddVertexData(glm::vec2(block_x * atlas_size, block_y * atlas_size));
-			roomMesh->AddVertexData(glm::vec4(0, 1, 0, 0));
+			roomMesh->AddVertexData(glm::vec2(block_x * atlas_size + offset, block_y * atlas_size + offset));
+			roomMesh->AddVertexData(glm::vec4(0, -1, 0, 0));
 
 			roomMesh->AddVertexData(glm::vec4(10, y + 1, z + 1, 1));
 			roomMesh->AddVertexData(glm::vec4(-1, 0, 0, 0));
-			roomMesh->AddVertexData(glm::vec2((block_x + 1) * atlas_size, block_y * atlas_size));
-			roomMesh->AddVertexData(glm::vec4(0, 1, 0, 0));
+			roomMesh->AddVertexData(glm::vec2((block_x + 1) * atlas_size - offset, block_y * atlas_size + offset));
+			roomMesh->AddVertexData(glm::vec4(0, -1, 0, 0));
 
 		}
 	}
@@ -379,10 +396,34 @@ int main(int argc, char** argv)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-	DiffuseMaterial *diffuseMaterial = new DiffuseMaterial();
-	diffuseMaterial->CreateMaterial(roomTextureLoader->GetUnit());
+	Engine::TextureLoader *blockNormalTexture = new Engine::TextureLoader(1, "Resources\\Textures\\NormalMap.png");
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-	Engine::RenderObject *roomObject = new Engine::RenderObject(roomMesh, diffuseMaterial);
+	NormalMaterial *normalMaterial = new NormalMaterial();
+	normalMaterial->CreateMaterial(roomTextureLoader->GetUnit(), blockNormalTexture->GetUnit());
+
+	Engine::RenderObject *roomObject = new Engine::RenderObject(roomMesh, normalMaterial);
+
+	Engine::Mesh *cube_mesh = new Engine::Mesh();
+
+	Geometry geometry = Geometry();
+	geometry.GenerateCube(cube_mesh);
+
+	std::string path_prefix = "Resources\\Textures\\skybox\\";
+	Engine::TextureLoader* skyboxTextureLoader = new Engine::TextureLoader(2, path_prefix + "left.jpg", path_prefix + "right.jpg",
+		path_prefix + "front.jpg", path_prefix + "back.jpg", path_prefix + "top.jpg", path_prefix + "bottom.jpg");
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+	CubeMaterial *cubemap_material = new CubeMaterial();
+	cubemap_material->CreateMaterial(skyboxTextureLoader->GetUnit());
+	Engine::RenderObject *cubemap_object = new Engine::RenderObject(cube_mesh, cubemap_material);
 
 	// Enable depth test
 	glEnable(GL_DEPTH_TEST);
@@ -394,7 +435,7 @@ int main(int argc, char** argv)
 	glCullFace(GL_BACK); // Cull back-facing triangles -> draw only front-facing triangles
 
 	glEnable(GL_TEXTURE_2D);
-	// glEnable(GL_TEXTURE_CUBE_MAP);
+	glEnable(GL_TEXTURE_CUBE_MAP);
 
 	glfwSetInputMode(g_window, GLFW_STICKY_KEYS, GL_TRUE);
 	glfwSetKeyCallback(g_window, KeyboardCallback);
@@ -425,21 +466,30 @@ int main(int argc, char** argv)
 			camera->GetTransform()->SetPosition(glm::vec3(9, pos.y, pos.z));
 		else if (pos.x < -9)
 			camera->GetTransform()->SetPosition(glm::vec3(-9, pos.y, pos.z));
+		pos = camera->GetTransform()->GetPosition();
 		if (pos.y > 4)
 			camera->GetTransform()->SetPosition(glm::vec3(pos.x, 4, pos.z));
 		else if (pos.y < -4)
 			camera->GetTransform()->SetPosition(glm::vec3(pos.x, -4, pos.z));
 		camera->GetTransform()->SetOrientation(
 			glm::rotate(
-				camera->GetTransform()->GetOrientation(),
-				mode_cam_left ? elapsed_time * CAMERA_ROTATE_SPEED :
-				mode_cam_right ? -elapsed_time * CAMERA_ROTATE_SPEED : 0,
+				glm::rotate(
+					glm::mat4(1.0f), 0.5f * PI, glm::vec3(1, 0, 0)
+				),
+				camera_direction,
 				glm::vec3(0, 1, 0)
 			)
 		);
 		
-		diffuseMaterial->UpdateDiffuseReflectance(glm::vec3(1, 1, 1));
-		diffuseMaterial->UpdateLight(lights);
+		glDisable(GL_CULL_FACE);
+		glDepthMask(GL_FALSE);
+		cubemap_material->IsSkybox(1);
+		cubemap_object->Render(camera);
+		glEnable(GL_CULL_FACE);
+		glDepthMask(GL_TRUE);
+
+		normalMaterial->UpdateDiffuseReflectance(glm::vec3(1, 1, 1));
+		normalMaterial->UpdateLight(lights);
 
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

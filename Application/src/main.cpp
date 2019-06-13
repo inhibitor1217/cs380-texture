@@ -127,9 +127,7 @@ int main(int argc, char** argv)
 
 	camera = new Engine::Camera(
 		glm::vec3(0),
-		glm::rotate(
-			glm::mat4(1.0f), 0.5f * PI, glm::vec3(1, 0, 0)
-		)
+		glm::mat4(1)
 	);
 	camera->SetProjection(g_window_width / g_window_height, 70.0, 0.1, 1200);
 
@@ -137,7 +135,7 @@ int main(int argc, char** argv)
 		LightType::DirectionalLight,
 		1,
 		new Engine::Transform(),
-		glm::vec3(2, 3, 1),
+		glm::vec3(2, 1, -3),
 		glm::vec3(1, 1, 1)
 	});
 	lights.push_back({
@@ -148,7 +146,7 @@ int main(int argc, char** argv)
 		glm::vec3(10, 10, 10)
 	});
 
-	lights[1].transform->SetPosition(glm::vec3(0, 0, 2));
+	lights[1].transform->SetPosition(glm::vec3(0, 2, 0));
 
 	Engine::Mesh *roomMesh = new Engine::Mesh();
 	roomMesh->AddAttribute(4);
@@ -406,15 +404,22 @@ int main(int argc, char** argv)
 	normalMaterial->CreateMaterial(roomTextureLoader->GetUnit(), blockNormalTexture->GetUnit());
 
 	Engine::RenderObject *roomObject = new Engine::RenderObject(roomMesh, normalMaterial);
+	roomObject->GetTransform()->SetOrientation(
+		glm::rotate(
+			glm::mat4(1),
+			-0.5f * PI,
+			glm::vec3(1, 0, 0)
+		)
+	);
 
 	Engine::Mesh *cube_mesh = new Engine::Mesh();
 
 	Geometry geometry = Geometry();
 	geometry.GenerateCube(cube_mesh);
 
-	std::string path_prefix = "Resources\\Textures\\skybox\\";
-	Engine::TextureLoader* skyboxTextureLoader = new Engine::TextureLoader(2, path_prefix + "left.jpg", path_prefix + "right.jpg",
-		path_prefix + "front.jpg", path_prefix + "back.jpg", path_prefix + "top.jpg", path_prefix + "bottom.jpg");
+	std::string path_prefix = "Resources\\Textures\\skybox\\criminal-element_";
+	Engine::TextureLoader* skyboxTextureLoader = new Engine::TextureLoader(2, path_prefix + "rt.tga", path_prefix + "lf.tga",
+		path_prefix + "up.tga", path_prefix + "dn.tga", path_prefix + "bk.tga", path_prefix + "ft.tga");
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -458,8 +463,8 @@ int main(int argc, char** argv)
 		camera_direction += mode_cam_right ? -elapsed_time * CAMERA_ROTATE_SPEED : 0;
 		camera->GetTransform()->SetPosition(glm::vec3(
 			camera->GetTransform()->GetPosition()
-			+ (mode_cam_forward ?  2 * elapsed_time * glm::vec3(cos(camera_direction + 0.5 * PI), sin(camera_direction + 0.5 * PI), 0.0f) : glm::vec3(0.0f))
-			+ (mode_cam_back    ? -2 * elapsed_time * glm::vec3(cos(camera_direction + 0.5 * PI), sin(camera_direction + 0.5 * PI), 0.0f) : glm::vec3(0.0f))
+			+ (mode_cam_forward ?  2 * elapsed_time * glm::vec3(cos(camera_direction + 0.5 * PI), 0.0f, -sin(camera_direction + 0.5 * PI)) : glm::vec3(0.0f))
+			+ (mode_cam_back    ? -2 * elapsed_time * glm::vec3(cos(camera_direction + 0.5 * PI), 0.0f, -sin(camera_direction + 0.5 * PI)) : glm::vec3(0.0f))
 		));
 		glm::vec3 pos = camera->GetTransform()->GetPosition();
 		if (pos.x > 9)
@@ -467,15 +472,13 @@ int main(int argc, char** argv)
 		else if (pos.x < -9)
 			camera->GetTransform()->SetPosition(glm::vec3(-9, pos.y, pos.z));
 		pos = camera->GetTransform()->GetPosition();
-		if (pos.y > 4)
-			camera->GetTransform()->SetPosition(glm::vec3(pos.x, 4, pos.z));
-		else if (pos.y < -4)
-			camera->GetTransform()->SetPosition(glm::vec3(pos.x, -4, pos.z));
+		if (pos.z > 4)
+			camera->GetTransform()->SetPosition(glm::vec3(pos.x, pos.y, 4));
+		else if (pos.z < -4)
+			camera->GetTransform()->SetPosition(glm::vec3(pos.x, pos.y, -4));
 		camera->GetTransform()->SetOrientation(
 			glm::rotate(
-				glm::rotate(
-					glm::mat4(1.0f), 0.5f * PI, glm::vec3(1, 0, 0)
-				),
+				glm::mat4(1),
 				camera_direction,
 				glm::vec3(0, 1, 0)
 			)

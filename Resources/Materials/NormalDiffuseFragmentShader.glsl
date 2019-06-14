@@ -4,9 +4,12 @@ in vec4 fragmentPosition;
 in vec4 fragmentNormal;
 in vec4 fragmentTangent;
 in vec2 uv;
+in vec4 fragmentPosition_Light;
 
 uniform sampler2D textureMap;
 uniform sampler2D normalMap;
+uniform sampler2D depthMap;
+
 out vec4 output_color;
 
 struct Light
@@ -31,7 +34,7 @@ void main()
 	vec3 intensity = vec3(0);
 
 	// Tweak normals using textures
-	vec3 mappedNormal = 2.0 * texture(normalMap, uv).xyz - 1.0;
+	vec3 mappedNormal = normalize(2.0 * texture(normalMap, uv).xyz - vec3(1.0));
 	vec3 N = normalize(fragmentNormal.xyz);
 	vec3 T = normalize(fragmentTangent.xyz);
 	vec3 B = cross(N, T);
@@ -40,11 +43,22 @@ void main()
 	tangentToCamera[0] = T;
 	tangentToCamera[1] = B;
 	tangentToCamera[2] = N;
-	vec3 normal = tangentToCamera * mappedNormal;
-
-	vec3 n_normal = normalize(normal);
+	vec3 n_normal = tangentToCamera * mappedNormal;
 	// output_color = vec4(n_normal * 0.5 + 0.5, 1);
-
+	
+	vec3 depth_pos = (0.95 * fragmentPosition_Light.xyz / fragmentPosition_Light.w) * 0.5 + 0.5;
+	
+	vec2 texel_size = 1.0 / textureSize(depthMap, 0);
+	float shadowFactor = 0.0f;
+	for (int ds = -1; ds <= 1; ds++)
+	{
+		for (int dt = -1; dt <= 1; dt++)
+		{
+			float intersectionDepth = texture(depthMap, depth_pos.xy + vec2(ds, dt) * texel_size).r;
+			shadowFactor += intersectionDepth < depth_pos.z - 0.0005 ? 0 : 1.0 / 9.0;		
+		}
+	}
+	
 	mat4 worldToCamera = inverse(cameraTransform);
 	for (int i=0; i<numLights; i++)
 	{
@@ -67,7 +81,7 @@ void main()
 
 			intensity += (
 				   diffuse_factor  * lights[i].diffuse_illuminance  * diffuse_reflectance 
-			//	 + specular_factor * vec3(1, 1, 1)
+				 + specular_factor * vec3(1, 1, 1)
 			) / pow(light_length, 2);
 		}
 		else if(lights[i].type == 2)
@@ -79,9 +93,9 @@ void main()
 			float diffuse_factor   = clamp( dot(n_normal, n_light_direction), 0, 1);
 			float specular_factor  = pow( dot(n_normal, n_half_angle), 50.0);
 
-			intensity += (
+			intensity += shadowFactor * (
 				   diffuse_factor  * lights[i].diffuse_illuminance  * diffuse_reflectance 
-			//	 + specular_factor * vec3(1, 1, 1)
+				 + specular_factor * vec3(1, 1, 1)
 			);
 		}
 	}

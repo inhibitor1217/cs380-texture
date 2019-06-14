@@ -4,7 +4,7 @@
 #define BUF_SIZE 50
 
 //TODO
-void NormalMaterial::CreateMaterial(int unit, int normal)
+void NormalMaterial::CreateMaterial(int unit, int normal, int depth)
 {
 	_program->AttachShader("Resources\\Materials\\NormalVertexShader.glsl", GL_VERTEX_SHADER);
 	_program->AttachShader("Resources\\Materials\\NormalDiffuseFragmentShader.glsl", GL_FRAGMENT_SHADER);
@@ -16,6 +16,9 @@ void NormalMaterial::CreateMaterial(int unit, int normal)
 
 	location = glGetUniformLocation(_program->GetProgramId(), "normalMap");
 	glUniform1i(location, normal);
+
+	location = glGetUniformLocation(_program->GetProgramId(), "depthMap");
+	glUniform1i(location, depth);
 }
 
 void NormalMaterial::UpdateDiffuseReflectance(glm::vec3 color)
@@ -59,6 +62,19 @@ void NormalMaterial::UpdateLight(std::vector<Light> &lights)
 		snprintf(buf, BUF_SIZE, "lights[%d].enabled", i);
 		location = glGetUniformLocation(pid, buf);
 		glUniform1iv(location, 1, (int*)&(lights[i].enabled));
+
+		if (lights[i].type == LightType::DirectionalLight)
+		{
+			glm::mat4 lightTransform = glm::inverse(glm::lookAt(
+				10.0f * lights[i].light_direction,
+				glm::vec3(0),
+				glm::vec3(0, 1, 0)
+			));
+			glUniformMatrix4fv(glGetUniformLocation(pid, "lightTransform"), 1, GL_FALSE, (float *)&lightTransform);
+
+			glm::mat4 lightProjection = glm::ortho(-20.0f, 20.0f, -20.0f, 20.0f, 1.0f, 100.0f);
+			glUniformMatrix4fv(glGetUniformLocation(pid, "lightProjection"), 1, GL_FALSE, (float *)&lightProjection);
+		}
 
 	}
 }

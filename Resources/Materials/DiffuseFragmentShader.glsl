@@ -83,6 +83,5 @@ void main()
 
 	// Get color from texture
 	output_color = output_color * texture(ourTexture, uv);
-
 	
 }

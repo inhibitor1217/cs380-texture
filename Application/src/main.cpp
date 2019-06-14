@@ -26,8 +26,12 @@
 #include <RenderObject.hpp>
 
 #include <Geometry.hpp>
+#include <DiffuseMaterial.hpp>
 #include <NormalMaterial.hpp>
 #include <CubeMaterial.hpp>
+#include <ShadowMap.hpp>
+#include <ShadowMaterial.hpp>
+#include <ShadowCastingObject.hpp>
 
 GLFWwindow* g_window;
 float g_window_width = 1440.f;
@@ -36,7 +40,7 @@ int g_framebuffer_width = 1440;
 int g_framebuffer_height = 1080;
 
 constexpr float PI = 3.14159265f;
-constexpr float CAMERA_ROTATE_SPEED = 0.5f;
+constexpr float CAMERA_ROTATE_SPEED = 1.2f;
 
 static float camera_direction = 0;
 
@@ -135,8 +139,8 @@ int main(int argc, char** argv)
 		LightType::DirectionalLight,
 		1,
 		new Engine::Transform(),
-		glm::vec3(2, 1, -3),
-		glm::vec3(1, 1, 1)
+		glm::vec3(0, 0, 0),
+		glm::vec3(2, 2, 2)
 	});
 	lights.push_back({
 		LightType::PointLight,
@@ -401,9 +405,9 @@ int main(int argc, char** argv)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
 	NormalMaterial *normalMaterial = new NormalMaterial();
-	normalMaterial->CreateMaterial(roomTextureLoader->GetUnit(), blockNormalTexture->GetUnit());
+	normalMaterial->CreateMaterial(roomTextureLoader->GetUnit(), blockNormalTexture->GetUnit(), 3);
 
-	Engine::RenderObject *roomObject = new Engine::RenderObject(roomMesh, normalMaterial);
+	ShadowCastingObject *roomObject = new ShadowCastingObject(roomMesh, normalMaterial);
 	roomObject->GetTransform()->SetOrientation(
 		glm::rotate(
 			glm::mat4(1),
@@ -418,8 +422,8 @@ int main(int argc, char** argv)
 	geometry.GenerateCube(cube_mesh);
 
 	std::string path_prefix = "Resources\\Textures\\skybox\\criminal-element_";
-	Engine::TextureLoader* skyboxTextureLoader = new Engine::TextureLoader(2, path_prefix + "rt.tga", path_prefix + "lf.tga",
-		path_prefix + "up.tga", path_prefix + "dn.tga", path_prefix + "bk.tga", path_prefix + "ft.tga");
+	Engine::TextureLoader* skyboxTextureLoader = new Engine::TextureLoader(2, path_prefix + "bk.tga", path_prefix + "ft.tga",
+		path_prefix + "up.tga", path_prefix + "dn.tga", path_prefix + "lf.tga", path_prefix + "rt.tga");
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -430,6 +434,49 @@ int main(int argc, char** argv)
 	cubemap_material->CreateMaterial(skyboxTextureLoader->GetUnit());
 	Engine::RenderObject *cubemap_object = new Engine::RenderObject(cube_mesh, cubemap_material);
 
+	ShadowMaterial *shadowMaterial = new ShadowMaterial();
+	shadowMaterial->CreateMaterial();
+	roomObject->SetShadowMat(shadowMaterial);
+	
+	shadowInitialize(1024, 1024, 3);
+	/*
+	Engine::Mesh *quadMesh = new Engine::Mesh();
+	quadMesh->AddAttribute(4);
+	quadMesh->AddAttribute(4);
+	quadMesh->AddAttribute(2);
+	quadMesh->AddAttribute(4);
+	quadMesh->AddVertexData(glm::vec4(-1, -1, -1, 1));
+	quadMesh->AddVertexData(glm::vec4(0, 0, 1, 0));
+	quadMesh->AddVertexData(glm::vec2(1, 0));
+	quadMesh->AddVertexData(glm::vec4(1, 0, 0, 0));
+	quadMesh->AddVertexData(glm::vec4(1, -1, -1, 1));
+	quadMesh->AddVertexData(glm::vec4(0, 0, 1, 0));
+	quadMesh->AddVertexData(glm::vec2(0, 0));
+	quadMesh->AddVertexData(glm::vec4(1, 0, 0, 0));
+	quadMesh->AddVertexData(glm::vec4(1, 1, -1, 1));
+	quadMesh->AddVertexData(glm::vec4(0, 0, 1, 0));
+	quadMesh->AddVertexData(glm::vec2(0, 1));
+	quadMesh->AddVertexData(glm::vec4(1, 0, 0, 0));
+	quadMesh->AddVertexData(glm::vec4(-1, -1, -1, 1));
+	quadMesh->AddVertexData(glm::vec4(0, 0, 1, 0));
+	quadMesh->AddVertexData(glm::vec2(1, 0));
+	quadMesh->AddVertexData(glm::vec4(1, 0, 0, 0));
+	quadMesh->AddVertexData(glm::vec4(1, 1, -1, 1));
+	quadMesh->AddVertexData(glm::vec4(0, 0, 1, 0));
+	quadMesh->AddVertexData(glm::vec2(0, 1));
+	quadMesh->AddVertexData(glm::vec4(1, 0, 0, 0));
+	quadMesh->AddVertexData(glm::vec4(-1, 1, -1, 1));
+	quadMesh->AddVertexData(glm::vec4(0, 0, 1, 0));
+	quadMesh->AddVertexData(glm::vec2(1, 1));
+	quadMesh->AddVertexData(glm::vec4(1, 0, 0, 0));
+	quadMesh->SetNumElements(6);
+	quadMesh->CreateMesh();
+
+	DiffuseMaterial *diffuseMaterial = new DiffuseMaterial();
+	diffuseMaterial->CreateMaterial(3);
+
+	Engine::RenderObject *quadObject = new Engine::RenderObject(quadMesh, diffuseMaterial);
+	*/
 	// Enable depth test
 	glEnable(GL_DEPTH_TEST);
 
@@ -456,8 +503,7 @@ int main(int argc, char** argv)
 		float elapsed_time = total_time - prev_time;
 		prev_time = total_time;
 
-		/* Clear buffers. */
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		lights[0].light_direction = glm::vec3(5 * cos(0.01 * total_time), 1, 5 * sin(0.01 * total_time));
 
 		camera_direction += mode_cam_left ? elapsed_time * CAMERA_ROTATE_SPEED : 0;
 		camera_direction += mode_cam_right ? -elapsed_time * CAMERA_ROTATE_SPEED : 0;
@@ -484,6 +530,18 @@ int main(int argc, char** argv)
 			)
 		);
 		
+		glViewport(0, 0, 1024, 1024);
+		glBindFramebuffer(GL_FRAMEBUFFER, shadow_fbo);
+		glClear(GL_DEPTH_BUFFER_BIT);
+		
+		glDisable(GL_CULL_FACE);
+		roomObject->RenderShadow(lights[0]);
+		glEnable(GL_CULL_FACE);
+
+		glViewport(0, 0, g_framebuffer_width, g_framebuffer_height);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
 		glDisable(GL_CULL_FACE);
 		glDepthMask(GL_FALSE);
 		cubemap_material->IsSkybox(1);
@@ -500,6 +558,8 @@ int main(int argc, char** argv)
 		roomObject->Render(camera);
 
 		glDisable(GL_BLEND);
+		
+		// quadObject->Render(camera);
 			
 		/* Swap front and back buffers */
 		glfwSwapBuffers(g_window);

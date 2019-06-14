@@ -9,10 +9,15 @@ uniform mat4 worldTransform;
 uniform mat4 cameraTransform;
 uniform mat4 projectionMatrix;
 
+uniform mat4 lightTransform;
+uniform mat4 lightProjection;
+
 out vec4 fragmentPosition;
 out vec4 fragmentNormal;
 out vec4 fragmentTangent;
 out vec2 uv;
+
+out vec4 fragmentPosition_Light;
 
 mat4 NormalMatrix(mat4 MVM)
 {
@@ -36,6 +41,9 @@ void main()
 	fragmentPosition = wPosition;
 	fragmentNormal = NVM * normal;
 	fragmentTangent = NVM * tangent;
+
+	fragmentPosition_Light = lightProjection * inverse(lightTransform) * worldTransform * pos;
+
 	gl_Position = projectionMatrix * wPosition;
 
 }

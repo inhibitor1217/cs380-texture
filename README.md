@@ -1,6 +1,8 @@
 # cs380-texture
 KAIST CS380: Introduction to Computer Graphics
 
+DO NOT USE THIS PROJECT FOR YOUR OWN ASSIGNMENT.
+
 - Skybox implementation with cube texture
 ![cube-map](hw4-cube-map.PNG)
 
